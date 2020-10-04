@@ -1,0 +1,17 @@
+{% extends 'admin/base.html' %}
+{% load i18n %}
+
+{% block breadcrumbs %}{% endblock %}
+
+{% block branding %}URL trumpinter{% endblock %}
+
+{% block content %}
+    <form method="post">
+        {% csrf_token %}
+        {{ form }}
+        <input type="submit" name="submit" value="{% trans 'Shorten!' %}">
+    </form>
+    {% if generated_url %}
+        <div>Your shortened URL is <a href="{{ generated_url }}">{{ generated_url }}</a>.</div>
+    {% endif %}
+{% endblock %}
