@@ -1,9 +1,8 @@
 # Create your views here.
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
-from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404
+from django.http import HttpResponseRedirect, Http404
 from django.utils.translation import ugettext_lazy as _
-from django.views.decorators.cache import cache_page
 from django.views.generic import FormView
 
 from shortener.forms import UrlShortenerForm
@@ -32,7 +31,9 @@ class IndexView(FormView):
         return self.render_to_response(self.get_context_data(**extra_context))
 
 
-@cache_page(60 * 10)
 def get_url_redirect(request, short_url):
-    shortened_url = get_object_or_404(ShortenedUrl, shortened_url_path=short_url)
-    return HttpResponseRedirect(shortened_url.url)
+    try:
+        full_url = ShortenedUrl.objects.get_full_url(short_url)
+    except ObjectDoesNotExist:
+        raise Http404
+    return HttpResponseRedirect(full_url)
