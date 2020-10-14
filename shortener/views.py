@@ -7,6 +7,7 @@ from django.views.generic import FormView
 
 from shortener.forms import UrlShortenerForm
 from shortener.models import ShortenedUrl
+from shortener.utils import get_client_ip
 
 
 class IndexView(FormView):
@@ -38,7 +39,9 @@ def get_url_redirect(request, short_url: str):
     Given a short URL, generates an HttpResponseRedirect to a corresponding target URL
     """
     # only allow URLs that have not been deactivated
-    full_url = get_object_or_404(ShortenedUrl, shortened_url_path=short_url, active=True).url
+    url_object = get_object_or_404(ShortenedUrl, shortened_url_path=short_url, active=True)
+    url_object.clicks.create(referer=request.META.get('HTTP_REFERER'), ip_address=get_client_ip(request))
+    full_url = url_object.url
     return HttpResponseRedirect(full_url)
 
 
