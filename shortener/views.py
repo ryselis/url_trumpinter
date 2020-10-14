@@ -1,7 +1,7 @@
 # Create your views here.
-from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
-from django.http import HttpResponseRedirect, Http404
+from django.http import HttpResponseRedirect
+from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import FormView
 
@@ -37,10 +37,8 @@ def get_url_redirect(request, short_url: str):
     """
     Given a short URL, generates an HttpResponseRedirect to a corresponding target URL
     """
-    try:
-        full_url = ShortenedUrl.objects.get_full_url(short_url)
-    except ObjectDoesNotExist:
-        raise Http404  # such short URL is not found, show 404 page
+    # only allow URLs that have not been deactivated
+    full_url = get_object_or_404(ShortenedUrl, shortened_url_path=short_url, active=True).url
     return HttpResponseRedirect(full_url)
 
 

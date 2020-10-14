@@ -10,8 +10,15 @@ from shortener.managers import ShortenedUrlManager
 class ShortenedUrl(models.Model):
     url = models.URLField(verbose_name=_('URL'))
     shortened_url_path = models.CharField(max_length=8, verbose_name=_('Short URL path'), db_index=True, unique=True)
+    active = models.BooleanField(verbose_name=_('Active'), default=True, editable=False)
 
     objects = ShortenedUrlManager()
+
+    class Meta:
+        index_together = ('shortened_url_path', 'active')  # urls are queried by short path + active, index them
+
+    def __str__(self):
+        return f'{self.url} -> {self.shortened_url_path}'
 
 
 def get_shortened_url(url_length):
