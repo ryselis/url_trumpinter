@@ -1,16 +1,19 @@
 # Create your views here.
 from datetime import datetime
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
-from django.db.models import Q
-from django.http import HttpResponseRedirect
-from django.shortcuts import get_object_or_404
+from django.db.models import Q, Count
+from django.http import HttpResponseRedirect, Http404
 from django.utils.translation import ugettext_lazy as _
 from django.views.generic import FormView
 
 from shortener.forms import UrlShortenerForm
 from shortener.models import ShortenedUrl
 from shortener.utils import get_client_ip
+
+
+MAX_CLICKS = 10
 
 
 class IndexView(FormView):
@@ -37,13 +40,18 @@ class IndexView(FormView):
         return self.render_to_response(self.get_context_data(**extra_context))
 
 
+@transaction.atomic
 def get_url_redirect(request, short_url: str):
     """
     Given a short URL, generates an HttpResponseRedirect to a corresponding target URL
     """
-    # only allow URLs that have not been deactivated
-    url_object = get_object_or_404(ShortenedUrl, Q(expiration_time__isnull=True) | Q(expiration_time__gte=datetime.now()),
-                                   shortened_url_path=short_url, active=True)
+    try:
+        # only allow URLs that have not been deactivated, not expired and have not reached the click limit
+        url_object = ShortenedUrl.objects.annotate(click_count=Count('clicks'))\
+            .filter(Q(expiration_time__isnull=True) | Q(expiration_time__gte=datetime.now()))\
+            .get(shortened_url_path=short_url, active=True, click_count__lte=MAX_CLICKS)
+    except ObjectDoesNotExist:
+        raise Http404
     url_object.clicks.create(referer=request.META.get('HTTP_REFERER'), ip_address=get_client_ip(request))
     full_url = url_object.url
     return HttpResponseRedirect(full_url)
