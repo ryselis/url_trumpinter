@@ -1,5 +1,8 @@
 # Create your views here.
+from datetime import datetime
+
 from django.db import transaction
+from django.db.models import Q
 from django.http import HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext_lazy as _
@@ -39,7 +42,8 @@ def get_url_redirect(request, short_url: str):
     Given a short URL, generates an HttpResponseRedirect to a corresponding target URL
     """
     # only allow URLs that have not been deactivated
-    url_object = get_object_or_404(ShortenedUrl, shortened_url_path=short_url, active=True)
+    url_object = get_object_or_404(ShortenedUrl, Q(expiration_time__isnull=True) | Q(expiration_time__gte=datetime.now()),
+                                   shortened_url_path=short_url, active=True)
     url_object.clicks.create(referer=request.META.get('HTTP_REFERER'), ip_address=get_client_ip(request))
     full_url = url_object.url
     return HttpResponseRedirect(full_url)

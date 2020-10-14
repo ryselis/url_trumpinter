@@ -9,7 +9,7 @@ from shortener.models import ShortenedUrl
 
 class ShortenedUrlAdmin(admin.ModelAdmin):
     actions = [deactivate_short_urls]
-    list_display = ('url', 'shortened_url_path', 'active', 'get_click_statistics')
+    list_display = ('url', 'shortened_url_path', 'active', 'expiration_time', 'get_click_statistics')
 
     def get_click_statistics(self, obj: ShortenedUrl):
         """
